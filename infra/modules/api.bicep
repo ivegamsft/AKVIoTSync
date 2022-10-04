@@ -88,7 +88,25 @@ resource functionApp 'Microsoft.Web/sites@2022-03-01' = {
   }
 }
 
+resource function 'Microsoft.Web/sites/functions@2022-03-01' = {
+  name: 'KeyVaultCertificateVersionCreated'
+  parent: functionApp
+  properties: {
+    config: any({
+      disabled: false
+      bindings: [
+        {
+          type: 'eventGridTrigger'
+          name: 'event'
+          direction: 'in'
+        }
+      ]
+    })
+  }
+}
+
 output API_IDENTITY_PRINCIPAL_ID string = functionApp.identity.principalId
 output API_ID string = functionApp.id
 output API_NAME string = functionApp.name
 output API_URI string = 'https://${functionApp.properties.defaultHostName}'
+output FUNCTION_ID string = function.id

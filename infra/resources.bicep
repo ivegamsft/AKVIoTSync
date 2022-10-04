@@ -61,6 +61,15 @@ resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = {
   }
 }
 
+resource systemTopic 'Microsoft.EventGrid/systemTopics@2021-12-01' = {
+  name: '${resourceToken}-kvlt-topic'
+  location: location
+  properties: {
+    source: keyVault.id
+    topicType: 'Microsoft.KeyVault.vaults'
+  }
+}
+
 module api 'modules/api.bicep' = {
   name: 'api'
   dependsOn: [
@@ -73,12 +82,23 @@ module api 'modules/api.bicep' = {
   }
 }
 
-resource systemTopic 'Microsoft.EventGrid/systemTopics@2021-12-01' = {
-  name: '${resourceToken}-kvlt-topic'
-  location: location
+resource eventSubscription 'Microsoft.EventGrid/systemTopics/eventSubscriptions@2021-12-01' = {
+  name: '${resourceToken}-kvlt-topic-sub'
+  parent: systemTopic
   properties: {
-    source: keyVault.id
-    topicType: 'Microsoft.KeyVault.vaults'
+    destination: {
+      properties: {
+        maxEventsPerBatch: 1
+        preferredBatchSizeInKilobytes: 64
+        resourceId: api.outputs.FUNCTION_ID
+      }
+      endpointType: 'AzureFunction'
+    }
+    filter: {
+      includedEventTypes: [
+        'Microsoft.KeyVault.CertificateNewVersionCreated'
+      ]
+    }
   }
 }
 
