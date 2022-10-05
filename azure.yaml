@@ -6,5 +6,3 @@ services:
     project: ./src/api
     language: py
     host: function
-  # event:
-  #   module: modules/eventsub

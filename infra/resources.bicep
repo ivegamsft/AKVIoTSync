@@ -3,7 +3,7 @@ param name string
 param principalId string = ''
 param tags object
 
-var resourceToken = toLower(uniqueString(subscription().id, name, location))
+var resourceToken = 'a${toLower(uniqueString(subscription().id, name, location))}'
 
 resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
   name: '${resourceToken}-kvlt'
@@ -11,18 +11,25 @@ resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
   tags: tags
   properties: {
     tenantId: subscription().tenantId
-    sku: { family: 'A', name: 'standard' }
-    accessPolicies: !empty(principalId) ? [
-      {
-        objectId: principalId
-        permissions: { 
-          certificates: [ 'all' ]
-          keys: [ 'all' ]
-          secrets: [ 'all' ]
-        }
-        tenantId: subscription().tenantId
-      }
-    ] : []
+    sku: { 
+      family: 'A'
+      name: 'standard' 
+    }
+    enableRbacAuthorization: true
+    accessPolicies: []
+  }
+}
+
+resource keyVaultAdministratorRole 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
+  name: '00482a5a-887f-4fb3-b363-3b7fe8e74483'
+}
+
+resource principalKeyVaultAdministratorRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(principalId, keyVaultAdministratorRole.id, keyVault.id)
+  scope: keyVault
+  properties: {
+    principalId: principalId
+    roleDefinitionId: keyVaultAdministratorRole.id
   }
 }
 
