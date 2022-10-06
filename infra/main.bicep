@@ -15,7 +15,7 @@ param principalId string = ''
 var tags = { 'azd-env-name': name }
 
 resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
-  name: 'akv-iot-sync-${name}'
+  name: '${name}rg'
   location: location
   tags: tags
 }

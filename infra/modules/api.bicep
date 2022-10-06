@@ -3,7 +3,7 @@ param name string
 param tags object
 
 var resourceToken = toLower(uniqueString(subscription().id, name, location))
-var functionAppName = '${resourceToken}-func'
+var functionAppName = '${name}api'
 
 resource applicationInsights 'Microsoft.Insights/components@2020-02-02' existing = {
   name: '${resourceToken}-ai'
@@ -43,8 +43,8 @@ resource functionApp 'Microsoft.Web/sites@2022-03-01' = {
   name: functionAppName
   location: location
   tags: union(tags, {
-    'azd-service-name': 'api'
-  })
+      'azd-service-name': 'api'
+    })
   kind: 'functionapp'
   identity: {
     type: 'SystemAssigned'
@@ -88,7 +88,25 @@ resource functionApp 'Microsoft.Web/sites@2022-03-01' = {
   }
 }
 
+resource function 'Microsoft.Web/sites/functions@2022-03-01' = {
+  name: 'KeyVaultCertificateVersionCreated'
+  parent: functionApp
+  properties: {
+    config: any({
+      disabled: false
+      bindings: [
+        {
+          type: 'eventGridTrigger'
+          name: 'event'
+          direction: 'in'
+        }
+      ]
+    })
+  }
+}
+
 output API_IDENTITY_PRINCIPAL_ID string = functionApp.identity.principalId
 output API_ID string = functionApp.id
 output API_NAME string = functionApp.name
 output API_URI string = 'https://${functionApp.properties.defaultHostName}'
+output FUNCTION_ID string = function.id

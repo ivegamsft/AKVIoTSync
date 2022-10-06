@@ -9,13 +9,16 @@ resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
   name: '${resourceToken}-kvlt'
   location: location
   tags: tags
+  dependsOn: [
+    iotHub
+  ]
   properties: {
     tenantId: subscription().tenantId
     sku: { family: 'A', name: 'standard' }
     accessPolicies: !empty(principalId) ? [
       {
         objectId: principalId
-        permissions: { 
+        permissions: {
           certificates: [ 'all' ]
           keys: [ 'all' ]
           secrets: [ 'all' ]
@@ -76,9 +79,33 @@ module api 'modules/api.bicep' = {
 resource systemTopic 'Microsoft.EventGrid/systemTopics@2021-12-01' = {
   name: '${resourceToken}-kvlt-topic'
   location: location
+  dependsOn: [
+    applicationInsights
+    api
+  ]
   properties: {
     source: keyVault.id
     topicType: 'Microsoft.KeyVault.vaults'
+  }
+}
+
+resource eventSubscription 'Microsoft.EventGrid/systemTopics/eventSubscriptions@2021-12-01' = {
+  name: '${resourceToken}-kvlt-topic-sub'
+  parent: systemTopic
+  properties: {
+    destination: {
+      properties: {
+        maxEventsPerBatch: 1
+        preferredBatchSizeInKilobytes: 64
+        resourceId: api.outputs.FUNCTION_ID
+      }
+      endpointType: 'AzureFunction'
+    }
+    filter: {
+      includedEventTypes: [
+        'Microsoft.KeyVault.CertificateNewVersionCreated'
+      ]
+    }
   }
 }
 

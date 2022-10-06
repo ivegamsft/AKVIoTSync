@@ -2,7 +2,7 @@ param location string = resourceGroup().location
 param name string
 
 var resourceToken = toLower(uniqueString(subscription().id, name, location))
-var functionAppName = '${resourceToken}-func'
+var functionAppName = '${name}api'
 
 resource systemTopic 'Microsoft.EventGrid/systemTopics@2021-12-01' existing = {
   name: '${resourceToken}-kvlt-topic'
